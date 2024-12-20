@@ -110,6 +110,7 @@ pub(crate) fn splat(
     tree: &crate::unpack::FileTree,
     map: Option<&crate::Map>,
     sdk_version: &str,
+    debug_dylibs_path: Option<PathBuf>,
     arches: u32,
     variants: u32,
 ) -> Result<Option<SdkHeaders>, Error> {
@@ -396,6 +397,32 @@ pub(crate) fn splat(
             }
 
             mappings
+        },
+        PayloadKind::VcrDebug => if debug_dylibs_path.is_some() {
+            let mut src = src.clone();
+            let mut target = debug_dylibs_path.unwrap();
+
+            src.push("SourceDir");
+            let dirname = match item.payload.target_arch.unwrap() {
+                Arch::Aarch | Arch::X86 => "System",
+                Arch::Aarch64 | Arch::X86_64 => "System64"
+            };
+            src.push(dirname);
+
+            target.push(item.payload.target_arch.unwrap().as_str());
+
+            let tree = get_tree(&src)?;
+
+            vec![Mapping {
+                src,
+                target,
+                tree,
+                kind,
+                variant,
+                section: SectionKind::VcrdLib,
+            }]
+        } else {
+            vec![]
         }
     };
 
@@ -440,7 +467,8 @@ pub(crate) fn splat(
                             mapping.target.parent().unwrap().to_owned(),
                             &map.crt.libs,
                         )
-                    }
+                    },
+                    SectionKind::VcrdLib => (mapping.target.clone(), &map.vcrd.libs)
                 };
 
                 let mut dir_stack = vec![Dir {
@@ -588,7 +616,8 @@ pub(crate) fn splat(
                                 PayloadKind::CrtHeaders
                                 | PayloadKind::AtlHeaders
                                 | PayloadKind::Ucrt
-                                | PayloadKind::AtlLibs => {}
+                                | PayloadKind::AtlLibs
+                                | PayloadKind::VcrDebug => {}
 
                                 PayloadKind::SdkHeaders => {
                                     if let Some(sdk_headers) = &mut sdk_headers {

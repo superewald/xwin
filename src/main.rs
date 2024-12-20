@@ -7,6 +7,7 @@ use camino::Utf8PathBuf as PathBuf;
 use clap::builder::{PossibleValuesParser, TypedValueParser as _};
 use clap::{Parser, Subcommand};
 use indicatif as ia;
+use std::env::var;
 use std::time::Duration;
 use tracing_subscriber::filter::LevelFilter;
 
@@ -224,6 +225,9 @@ pub struct Args {
     /// Whether to include the Active Template Library (ATL) in the installation
     #[arg(long)]
     include_atl: bool,
+    /// Download and extract the Visual C Runtime debug libraries to the path
+    #[arg(long)]
+    debug_dylibs: Option<PathBuf>,
     /// Specifies a timeout for how long a single download is allowed to take.
     #[arg(short, long, value_parser = parse_duration, default_value = "60s")]
     timeout: Duration,
@@ -325,6 +329,13 @@ fn main() -> Result<(), Error> {
         args.crt_version,
     )?;
 
+    let vcrd_packages = args.debug_dylibs
+        .is_some()
+        .then_some(xwin::get_vcrd_libs(
+            &pkg_manifest.packages, 
+            arches
+        ));
+
     let op = match args.cmd {
         Command::List => {
             print_packages(&pruned.payloads);
@@ -375,8 +386,10 @@ fn main() -> Result<(), Error> {
     let pkgs = pkg_manifest.packages;
 
     let mp = ia::MultiProgress::with_draw_target(draw_target.into());
-    let work_items: Vec<_> = pruned
-        .payloads
+    let work_items: Vec<_> = [
+            pruned.payloads,
+            vcrd_packages.unwrap_or(vec![])
+        ].concat()
         .into_iter()
         .map(|pay| {
             use xwin::PayloadKind;
@@ -412,6 +425,12 @@ fn main() -> Result<(), Error> {
                 }
                 PayloadKind::SdkStoreLibs => "SDK.libs.store.all".to_owned(),
                 PayloadKind::Ucrt => "SDK.ucrt.all".to_owned(),
+                PayloadKind::VcrDebug => {
+                    format!(
+                        "VC.Runtime.Debug.{}",
+                        pay.target_arch.map_or("all", |v| v.as_str())
+                    )
+                }
             };
 
             let pb = mp.add(
@@ -437,6 +456,7 @@ fn main() -> Result<(), Error> {
             work_items,
             pruned.crt_version,
             pruned.sdk_version,
+            args.debug_dylibs,
             arches,
             variants,
             op,

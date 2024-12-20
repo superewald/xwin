@@ -260,6 +260,7 @@ impl Ctx {
         payloads: Vec<WorkItem>,
         crt_version: String,
         sdk_version: String,
+        debug_dylibs: Option<PathBuf>,
         arches: u32,
         variants: u32,
         ops: crate::Ops,
@@ -376,6 +377,7 @@ impl Ctx {
                         map.as_ref()
                             .filter(|_m| !matches!(ops, crate::Ops::Minimize(_))),
                         &sdk_version,
+                        debug_dylibs.clone(),
                         arches,
                         variants,
                     )

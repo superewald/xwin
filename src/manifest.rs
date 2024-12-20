@@ -165,10 +165,20 @@ pub fn get_package_manifest(
     let manifest: PkgManifest =
         serde_json::from_slice(&manifest_bytes).context("unable to parse manifest")?;
 
-    let mut packages = BTreeMap::new();
+    let mut packages: BTreeMap<String, ManifestItem> = BTreeMap::new();
+
+    let mut package_counts: BTreeMap<String, u32> = BTreeMap::new();
 
     for pkg in manifest.packages {
-        packages.insert(pkg.id.clone(), pkg);
+        // append #<count> to packages with duplicated ids to prevent overriding it
+        let package_id = if packages.contains_key(&pkg.id) {
+            let count = package_counts.get(&pkg.id).unwrap_or(&0).to_owned() + 1;
+            package_counts.insert(pkg.id.clone(), count);
+            format!("{}#{}", &pkg.id, count)
+        } else {
+            pkg.id.clone()
+        };
+        packages.insert(package_id, pkg);
     }
 
     Ok(PackageManifest { packages })

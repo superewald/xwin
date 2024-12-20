@@ -183,6 +183,7 @@ pub enum PayloadKind {
     SdkLibs,
     SdkStoreLibs,
     Ucrt,
+    VcrDebug
 }
 
 pub struct PrunedPackageList {
@@ -732,10 +733,62 @@ fn get_sdk(
     Ok(sdk_version.to_string())
 }
 
+pub fn get_vcrd_libs(
+    pkgs: &BTreeMap<String, manifest::ManifestItem>,
+    arches: u32
+) -> Vec<Payload> {
+    // determine target architecture for the vcrd package
+    fn determine_vcrd_arch(manifest_item: &manifest::ManifestItem, payload: &manifest::Payload) -> Option<Arch> {
+        if payload.file_name.contains("arm64") {
+            Some(Arch::Aarch64)
+        } else if payload.file_name.contains("arm") {
+            Some(Arch::Aarch)
+        } else {
+            [
+                (manifest::Chip::X64, Arch::X86_64),
+                (manifest::Chip::X86, Arch::X86),
+            ]
+            .iter()
+            .find_map(|(s, arch)| manifest_item.chip.unwrap().eq(s).then_some(*arch))
+        }
+    }
+
+    pkgs.iter()
+        // get all vc debug runtime items (key is renamed by manifest::get_package_manifest)
+        .filter(|(key, _)| key.starts_with("Microsoft.VisualCpp.RuntimeDebug.14"))
+        // get the first payload (which contains the MSI)
+        .filter_map(|(_, manifest_item)| {
+            manifest_item.payloads.get(0).map(|payload| (manifest_item, payload))
+        })
+        // map package to payload
+        .map(|(manifest_item, payload) | -> Payload {
+            let target_arch = determine_vcrd_arch(manifest_item, payload);
+
+            Payload {
+                filename: format_args!("Microsoft.VCR.{}.debug.{}.msi", manifest_item.version, target_arch.unwrap().as_str()).to_string().into(),
+                sha256: payload.sha256.clone(),
+                url: payload.url.clone(),
+                size: payload.size,
+                kind: PayloadKind::VcrDebug,
+                target_arch,
+                variant: Some(Variant::Desktop),
+                install_size: (manifest_item.payloads.len() == 1)
+                    .then_some(manifest_item)
+                    .and_then(|mi| mi.install_sizes.as_ref().and_then(|is| is.target_drive)),
+            }
+        })
+        .filter(| payload| {
+            payload.target_arch.is_some_and(| target_arch | 
+                Arch::iter(arches).any(|arch| arch.eq(&target_arch)))
+        })
+        .collect::<Vec<_>>()
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Default)]
 pub struct Map {
     pub crt: Block,
     pub sdk: Block,
+    pub vcrd: Block,
 }
 
 impl Map {
@@ -764,6 +817,7 @@ pub enum SectionKind {
     CrtLib,
     SdkHeader,
     SdkLib,
+    VcrdLib,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Default)]
