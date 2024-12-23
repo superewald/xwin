@@ -539,7 +539,7 @@ pub(crate) fn unpack(
                             uf: std::fs::File,
                         }
 
-                        impl<'pb> std::io::Write for Wrapper<'pb> {
+                        impl std::io::Write for Wrapper<'_> {
                             fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
                                 self.pb.inc(buf.len() as u64);
                                 self.uf.write(buf)

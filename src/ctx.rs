@@ -87,8 +87,8 @@ impl Ctx {
             tracing::debug!("verifying existing cached dl file");
 
             match std::fs::read(&cache_path) {
-                Ok(contents) => match &checksum {
-                    Some(expected) => {
+                Ok(contents) => {
+                    if let Some(expected) = &checksum {
                         let chksum = Sha256::digest(&contents);
 
                         if chksum != *expected {
@@ -102,13 +102,12 @@ impl Ctx {
                             progress.inc(contents.len() as u64);
                             return Ok(contents.into());
                         }
-                    }
-                    None => {
+                    } else {
                         progress.inc_length(contents.len() as u64);
                         progress.inc(contents.len() as u64);
                         return Ok(contents.into());
                     }
-                },
+                }
                 Err(e) => {
                     tracing::warn!(error = %e, "failed to read cached file");
                 }
