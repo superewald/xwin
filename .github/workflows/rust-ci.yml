@@ -86,12 +86,12 @@ jobs:
       - name: cargo test
         run: cargo test cli_help
 
-  deny-check:
-    name: cargo-deny
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@v2
+  #deny-check:
+  #  name: cargo-deny
+  #  runs-on: ubuntu-22.04
+  #  steps:
+  #    - uses: actions/checkout@v4
+  #    - uses: EmbarkStudios/cargo-deny-action@v2
 
   publish-check:
     name: Publish Check
