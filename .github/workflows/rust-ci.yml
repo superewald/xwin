@@ -17,10 +17,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
 
       # make sure all code has been formatted with rustfmt
@@ -38,9 +38,9 @@ jobs:
 
   check_compiles:
     name: Verify compiles
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       # Add the actual target we compile for in the test
       - run: rustup target add x86_64-pc-windows-msvc aarch64-pc-windows-msvc
@@ -64,9 +64,9 @@ jobs:
 
   check_deterministic:
     name: Verify deterministic
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo fetch
       - name: cargo test build
@@ -76,9 +76,9 @@ jobs:
 
   check_cli:
     name: Verify CLI
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo fetch
       - name: cargo test build
@@ -88,25 +88,25 @@ jobs:
 
   deny-check:
     name: cargo-deny
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: EmbarkStudios/cargo-deny-action@v2
 
   publish-check:
     name: Publish Check
     strategy:
-        matrix:
-          include:
-            - target: x86_64-unknown-linux-musl
-            - target: aarch64-unknown-linux-musl
-    runs-on: ubuntu-22.04
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+          - target: aarch64-unknown-linux-musl
+    runs-on: ubuntu-24.04
     env:
       CC_aarch64_unknown_linux_musl: clang
       AR_aarch64_unknown_linux_musl: llvm-ar
       CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS: "-Clink-self-contained=yes -Clinker=rust-lld"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           target: ${{ matrix.target }}
@@ -124,19 +124,19 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             target: x86_64-unknown-linux-musl
             strip: llvm-strip
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             target: aarch64-unknown-linux-musl
             strip: llvm-strip
-          - os: macos-12
+          - os: macos-15-intel
             target: x86_64-apple-darwin
             strip: strip
-          - os: macos-12
+          - os: macos-15
             target: aarch64-apple-darwin
             strip: strip
-          - os: windows-2022
+          - os: windows-2025
             target: x86_64-pc-windows-msvc
             strip: ""
     runs-on: ${{ matrix.os }}
@@ -152,7 +152,7 @@ jobs:
         if: endsWith(matrix.target, '-linux-musl')
         run: sudo apt-get install -y musl-tools llvm
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - run: cargo fetch --target ${{ matrix.target }}
       - name: Release build
         shell: bash
