@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+### Fixed
+- [PR#167](https://github.com/Jake-Shadle/xwin/pull/167) additionally installs onecore-uap headers for each architecture since some headers have been moved to them.
+- [PR#176](https://github.com/Jake-Shadle/xwin/pull/176) adds symlinks for some additional debug libraries.
+- [PR#179](https://github.com/Jake-Shadle/xwin/pull/179) resolved an issue where v18 manifests are now using correct path separators, but that caused a couple of errors due to matching exactly on bad path separators, resolving #[178](https://github.com/Jake-Shadle/xwin/issues/178).
+
 ## [0.9.0] - 2026-04-20
 ### Fixed
 - [PR#175](https://github.com/Jake-Shadle/xwin/pull/175) resolved [#174](https://github.com/Jake-Shadle/xwin/issues/174) by adjusting channel names when using version 18+ due to MS changing them for whatever reason.
