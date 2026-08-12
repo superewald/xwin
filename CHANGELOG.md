@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+## [0.10.0] - 2026-08-12
 ### Fixed
 - [PR#167](https://github.com/Jake-Shadle/xwin/pull/167) additionally installs onecore-uap headers for each architecture since some headers have been moved to them.
 - [PR#176](https://github.com/Jake-Shadle/xwin/pull/176) adds symlinks for some additional debug libraries.
@@ -226,7 +227,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial implementation if downloading, unpacking, and splatting of the CRT and Windows SDK. This first pass focused on targeting x86_64 Desktop, so targeting the Windows Store or other architectures is not guaranteed to work.
 
 <!-- next-url -->
-[Unreleased]: https://github.com/Jake-Shadle/xwin/compare/0.9.0...HEAD
+[Unreleased]: https://github.com/Jake-Shadle/xwin/compare/0.10.0...HEAD
+[0.10.0]: https://github.com/Jake-Shadle/xwin/compare/0.9.0...0.10.0
 [0.9.0]: https://github.com/Jake-Shadle/xwin/compare/0.8.0...0.9.0
 [0.8.0]: https://github.com/Jake-Shadle/xwin/compare/0.7.0...0.8.0
 [0.7.0]: https://github.com/Jake-Shadle/xwin/compare/0.6.7...0.7.0
