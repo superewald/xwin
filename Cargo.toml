@@ -46,7 +46,7 @@ memchr = "2.6"
 # SHA-256 verification
 sha2 = "0.11"
 # Deserialization
-serde = "1.0"
+serde = { version = "1.0", features = ["serde_derive"] }
 # JSON deserialization
 serde_json = "1.0"
 # Argument parsing
