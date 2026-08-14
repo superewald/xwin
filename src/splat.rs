@@ -1,6 +1,4 @@
-use crate::{
-    vfs, Arch, Ctx, Error, Path, PathBuf, PayloadKind, SectionKind, Variant, symlink,
-};
+use crate::{Arch, Ctx, Error, Path, PathBuf, PayloadKind, SectionKind, Variant, symlink, vfs};
 use anyhow::Context as _;
 use parking_lot::Mutex;
 use rayon::prelude::*;
