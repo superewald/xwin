@@ -15,6 +15,7 @@ mod minimize;
 mod splat;
 mod unpack;
 pub mod util;
+pub mod vfs;
 
 pub use ctx::Ctx;
 pub use minimize::MinimizeConfig;
@@ -1083,35 +1084,81 @@ impl Section {
     }
 }
 
-#[cfg(unix)]
-#[inline]
-fn symlink(original: &str, link: &Path) -> Result<(), Error> {
-    std::os::unix::fs::symlink(original, link)
-        .with_context(|| format!("unable to symlink from {link} to {original}"))
-}
-
-#[cfg(windows)]
-#[inline]
-fn symlink(_original: &str, _link: &Path) -> Result<(), Error> {
-    Ok(())
-}
+use parking_lot::Mutex;
 
 #[inline]
-fn symlink_on_windows_too(original: &str, link: &Path) -> Result<(), Error> {
-    #[cfg(unix)]
-    {
-        symlink(original, link)
-    }
+fn symlink(
+    original: &str,
+    link: &Path,
+    vfs: Option<(&Mutex<vfs::VfsOverlay>, &Path)>,
+) -> Result<(), Error> {
+    if let Some((vfs, output_root)) = vfs {
+        let external_contents_path = link.parent().unwrap().join(original);
+        let external_contents_abs = util::canonicalize(&external_contents_path)?;
+        let name_abs = util::canonicalize(link.parent().unwrap())?.join(link.file_name().unwrap());
 
-    #[cfg(windows)]
-    {
-        let full_path = link.parent().unwrap().join(original);
-        if full_path.is_dir() {
-            std::os::windows::fs::symlink_dir(original, link)
-                .with_context(|| format!("unable to symlink from {link} to {original}"))
+        let name = name_abs.strip_prefix(output_root)?.to_path_buf();
+        let external_contents = external_contents_abs
+            .strip_prefix(output_root)?
+            .to_path_buf();
+
+        let entry = if external_contents_abs.is_dir() {
+            vfs::VfsEntry::DirectoryRemap {
+                name,
+                external_contents,
+            }
         } else {
-            Ok(())
+            vfs::VfsEntry::File {
+                name,
+                external_contents,
+            }
+        };
+
+        vfs.lock().roots.push(entry);
+        Ok(())
+    } else {
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(original, link)
+                .with_context(|| format!("unable to symlink from {link} to {original}"))
         }
+        #[cfg(windows)]
+        {
+            let full_path = link.parent().unwrap().join(original);
+            if full_path.is_dir() {
+                std::os::windows::fs::symlink_dir(original, link)
+                    .with_context(|| format!("unable to symlink from {link} to {original}"))
+            } else {
+                std::os::windows::fs::symlink_file(original, link)
+                    .with_context(|| format!("unable to symlink from {link} to {original}"))
+            }
+        }
+    }
+}
+
+#[inline]
+fn symlink_on_windows_too(
+    original: &str,
+    link: &Path,
+    vfs: Option<(&Mutex<vfs::VfsOverlay>, &Path)>,
+) -> Result<(), Error> {
+    if let Some((vfs, output_root)) = vfs {
+        let external_contents_path = link.parent().unwrap().join(original);
+        let external_contents_abs = util::canonicalize(&external_contents_path)?;
+        let name_abs = util::canonicalize(link.parent().unwrap())?.join(link.file_name().unwrap());
+
+        let name = name_abs.strip_prefix(output_root)?.to_path_buf();
+        let external_contents = external_contents_abs
+            .strip_prefix(output_root)?
+            .to_path_buf();
+
+        vfs.lock().roots.push(vfs::VfsEntry::DirectoryRemap {
+            name,
+            external_contents,
+        });
+        Ok(())
+    } else {
+        symlink(original, link, None)
     }
 }
 

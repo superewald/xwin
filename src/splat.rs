@@ -1,5 +1,6 @@
-use crate::{Arch, Ctx, Error, Path, PathBuf, PayloadKind, SectionKind, Variant, symlink};
+use crate::{Arch, Ctx, Error, Path, PathBuf, PayloadKind, SectionKind, Variant, symlink, vfs};
 use anyhow::Context as _;
+use parking_lot::Mutex;
 use rayon::prelude::*;
 use std::collections::BTreeMap;
 
@@ -30,6 +31,7 @@ pub struct SplatConfig {
     pub include_debug_libs: bool,
     pub include_debug_symbols: bool,
     pub enable_symlinks: bool,
+    pub vfsoverlay: bool,
     pub preserve_ms_arch_notation: bool,
     pub use_winsysroot_style: bool,
     pub output: PathBuf,
@@ -140,6 +142,7 @@ pub(crate) fn splat(
     item: &crate::WorkItem,
     tree: &crate::unpack::FileTree,
     map: Option<&crate::Map>,
+    vfs: Option<(&Mutex<vfs::VfsOverlay>, &Path)>,
     sdk_version: &str,
     vcrd_version: Option<String>,
     arches: u32,
@@ -569,7 +572,7 @@ pub(crate) fn splat(
                             for sl in symlinks {
                                 tar.pop();
                                 tar.push(sl);
-                                symlink(fname.as_str(), &tar)?;
+                                symlink(fname.as_str(), &tar, vfs)?;
                             }
                         }
 
@@ -691,7 +694,7 @@ pub(crate) fn splat(
                                             tar.pop();
                                             tar.push(additional_name);
 
-                                            symlink(fname_str, &tar)?;
+                                            symlink(fname_str, &tar, vfs)?;
                                         }
                                     }
                                 }
@@ -700,7 +703,7 @@ pub(crate) fn splat(
                                         tar.pop();
                                         tar.push(angry_lib);
 
-                                        symlink(fname_str, &tar)?;
+                                        symlink(fname_str, &tar, vfs)?;
                                     }
                                 }
                                 PayloadKind::SdkLibs | PayloadKind::SdkStoreLibs => {
@@ -716,7 +719,7 @@ pub(crate) fn splat(
                                         tar.pop();
                                         tar.push(fname_str.to_ascii_lowercase());
 
-                                        symlink(fname_str, &tar)?;
+                                        symlink(fname_str, &tar, vfs)?;
                                     }
 
                                     // There is also this: https://github.com/time-rs/time/blob/v0.3.2/src/utc_offset.rs#L454
@@ -729,7 +732,7 @@ pub(crate) fn splat(
                                         tar.pop();
                                         tar.push(additional_name);
 
-                                        symlink(fname_str, &tar)?;
+                                        symlink(fname_str, &tar, vfs)?;
                                     }
 
                                     // We also need to support SCREAMING case for the library names
@@ -739,7 +742,7 @@ pub(crate) fn splat(
                                         tar.push(fname_str.to_ascii_uppercase());
                                         tar.set_extension("lib");
 
-                                        symlink(fname_str, &tar)?;
+                                        symlink(fname_str, &tar, vfs)?;
                                     }
                                 }
                             }
@@ -747,7 +750,7 @@ pub(crate) fn splat(
                             Ok(())
                         };
 
-                        if config.enable_symlinks {
+                        if config.enable_symlinks || config.vfsoverlay {
                             add_symlinks()?;
                         }
 
@@ -793,7 +796,7 @@ pub(crate) fn splat(
                     // Multiple architectures both have a lib dir,
                     // but we only need to create this symlink once.
                     if !versioned_linkname.exists() {
-                        crate::symlink_on_windows_too(".", &versioned_linkname)?;
+                        crate::symlink_on_windows_too(".", &versioned_linkname, vfs)?;
                     }
 
                     // https://github.com/llvm/llvm-project/blob/release/14.x/clang/lib/Driver/ToolChains/MSVC.cpp#L1102
@@ -801,7 +804,7 @@ pub(crate) fn splat(
                         let mut title_case = roots.sdk.clone();
                         title_case.push("Lib");
                         if !title_case.exists() {
-                            symlink("lib", &title_case)?;
+                            symlink("lib", &title_case, vfs)?;
                         }
                     }
                 }
@@ -814,7 +817,7 @@ pub(crate) fn splat(
                     // Desktop and Store variants both have an include dir,
                     // but we only need to create this symlink once.
                     if !versioned_linkname.exists() {
-                        crate::symlink_on_windows_too(".", &versioned_linkname)?;
+                        crate::symlink_on_windows_too(".", &versioned_linkname, vfs)?;
                     }
 
                     // https://github.com/llvm/llvm-project/blob/release/14.x/clang/lib/Driver/ToolChains/MSVC.cpp#L1340-L1346
@@ -822,7 +825,7 @@ pub(crate) fn splat(
                         let mut title_case = roots.sdk.clone();
                         title_case.push("Include");
                         if !title_case.exists() {
-                            symlink("include", &title_case)?;
+                            symlink("include", &title_case, vfs)?;
                         }
                     }
                 }
@@ -845,6 +848,7 @@ pub(crate) fn finalize_splat(
     sdk_headers: Vec<SdkHeaders>,
     crt_headers: Option<crate::unpack::FileTree>,
     atl_headers: Option<crate::unpack::FileTree>,
+    vfs: Option<(&Mutex<vfs::VfsOverlay>, &Path)>,
 ) -> Result<(), Error> {
     let mut files: std::collections::HashMap<
         _,
@@ -1025,7 +1029,7 @@ pub(crate) fn finalize_splat(
                     let mut link = disk_file.path.clone();
                     link.pop();
                     link.push(include_name);
-                    symlink(disk_name, &link)?;
+                    symlink(disk_name, &link, vfs)?;
                 }
                 _ => {}
             },
@@ -1045,7 +1049,7 @@ pub(crate) fn finalize_splat(
         // target.push("um/GL");
         // symlink("gl", &target)?;
     } else {
-        symlink("gl", &roots.sdk.join("include/um/GL"))?;
+        symlink("gl", &roots.sdk.join("include/um/GL"), vfs)?;
     }
 
     Ok(())

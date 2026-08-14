@@ -41,6 +41,11 @@ Options:
           --preserve-ms-arch-notation and --disable-symlinks for use with
           clang-cl on Windows
 
+      --vfsoverlay
+          Instead of creating filesystem symlinks for case-variant paths, create
+          a `vfsoverlay.json` file that can be used with clang's `-ivfsoverlay`
+          option
+
       --output <OUTPUT>
           The root output directory. Defaults to `./.xwin-cache/splat` if not
           specified

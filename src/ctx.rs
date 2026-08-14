@@ -275,6 +275,8 @@ impl Ctx {
         let crt_ft = parking_lot::Mutex::new(None);
         let atl_ft = parking_lot::Mutex::new(None);
 
+        let vfs = parking_lot::Mutex::new(crate::vfs::VfsOverlay::new());
+
         let mut splat_config = match &ops {
             crate::Ops::Splat(config) => {
                 let splat_roots = crate::splat::prep_splat(
@@ -299,6 +301,7 @@ impl Ctx {
                     include_debug_libs: config.include_debug_libs,
                     include_debug_symbols: config.include_debug_symbols,
                     enable_symlinks: config.enable_symlinks,
+                    vfsoverlay: false,
                     use_winsysroot_style: config.use_winsysroot_style,
                     output: splat_roots.root.clone(),
                     map: Some(config.map.clone()),
@@ -378,6 +381,10 @@ impl Ctx {
                 }
 
                 let sdk_headers = if let Some((splat_roots, config)) = &splat_config {
+                    let vfs = config
+                        .vfsoverlay
+                        .then_some((&vfs, splat_roots.root.as_path()));
+
                     crate::splat::splat(
                         config,
                         splat_roots,
@@ -385,6 +392,7 @@ impl Ctx {
                         &ft,
                         map.as_ref()
                             .filter(|_m| !matches!(ops, crate::Ops::Minimize(_))),
+                        vfs,
                         &sdk_version,
                         vcrd_version.clone(),
                         arches,
@@ -413,7 +421,9 @@ impl Ctx {
         };
 
         let splat_links = || -> anyhow::Result<()> {
-            if enable_symlinks {
+            let vfs_with_root = sc.vfsoverlay.then_some((&vfs, roots.root.as_path()));
+
+            if enable_symlinks || vfs_with_root.is_some() {
                 let crt_ft = crt_ft.lock().take();
                 let atl_ft = atl_ft.lock().take();
 
@@ -424,7 +434,16 @@ impl Ctx {
                     sdk_headers,
                     crt_ft,
                     atl_ft,
+                    vfs_with_root,
                 )?;
+            }
+
+            if let Some((vfs, _)) = vfs_with_root {
+                let vfs_path = sc.output.join("vfsoverlay.json");
+                let vfs_file = std::fs::File::create(&vfs_path)
+                    .with_context(|| format!("failed to create VFS overlay file at {vfs_path}"))?;
+                serde_json::to_writer_pretty(vfs_file, &*vfs.lock())
+                    .with_context(|| format!("failed to write VFS overlay file to {vfs_path}"))?;
             }
 
             Ok(())

@@ -65,6 +65,10 @@ pub struct SplatOptions {
     /// and --disable-symlinks for use with clang-cl on Windows.
     #[arg(long)]
     use_winsysroot_style: bool,
+    /// Instead of creating filesystem symlinks for case-variant paths, create
+    /// a `vfsoverlay.json` file that can be used with clang's `-ivfsoverlay` option.
+    #[arg(long, conflicts_with = "disable_symlinks")]
+    vfsoverlay: bool,
 }
 
 #[derive(Subcommand)]
@@ -351,7 +355,8 @@ fn main() -> Result<(), Error> {
         } => xwin::Ops::Splat(xwin::SplatConfig {
             include_debug_libs: options.include_debug_libs,
             include_debug_symbols: options.include_debug_symbols,
-            enable_symlinks: !options.disable_symlinks,
+            enable_symlinks: !options.disable_symlinks && !options.vfsoverlay,
+            vfsoverlay: options.vfsoverlay,
             preserve_ms_arch_notation: options.preserve_ms_arch_notation,
             use_winsysroot_style: options.use_winsysroot_style,
             copy,
