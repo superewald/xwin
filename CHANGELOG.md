@@ -8,6 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
+## [0.10.0] - 2026-08-12
+### Fixed
+- [PR#167](https://github.com/Jake-Shadle/xwin/pull/167) additionally installs onecore-uap headers for each architecture since some headers have been moved to them.
+- [PR#176](https://github.com/Jake-Shadle/xwin/pull/176) adds symlinks for some additional debug libraries.
+- [PR#179](https://github.com/Jake-Shadle/xwin/pull/179) resolved an issue where v18 manifests are now using correct path separators, but that caused a couple of errors due to matching exactly on bad path separators, resolving #[178](https://github.com/Jake-Shadle/xwin/issues/178).
+
+## [0.9.0] - 2026-04-20
+### Fixed
+- [PR#175](https://github.com/Jake-Shadle/xwin/pull/175) resolved [#174](https://github.com/Jake-Shadle/xwin/issues/174) by adjusting channel names when using version 18+ due to MS changing them for whatever reason.
+
+## [0.8.0] - 2026-02-06
+### Removed
+- [PR#170](https://github.com/Jake-Shadle/xwin/pull/170) removed the `native-tls` and `rustls-tls` feature flags, `rustls` is now used as the TLS implementation unconditionally.
+
+### Changed
+- [PR#170](https://github.com/Jake-Shadle/xwin/pull/170) changed it so that [`rustls-platform-verifier`](https://github.com/rustls/rustls-platform-verifier) is used for certificate validation. Previously `webpki-roots` was used, but this meant hostile corporate networks that middle man HTTPS traffic would cause failures.
+
+## [0.7.0] - 2026-01-08
+### Changed
+- [PR#169](https://github.com/Jake-Shadle/xwin/pull/169) updated crates.
+
+### Fixed
+- [PR#161](https://github.com/Jake-Shadle/xwin/pull/161) fixed the casing for `--winsysroot` splatting.
+
 ## [0.6.7] - 2025-08-15
 ### Fixed
 - [PR#160](https://github.com/Jake-Shadle/xwin/pull/160) resolved [#126](https://github.com/Jake-Shadle/xwin/issues/126) by ignoring MSI installers that don't reference any cabinet files. Why do such utterly fucking useless installers exist? Because fuck me I guess.
@@ -203,7 +227,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial implementation if downloading, unpacking, and splatting of the CRT and Windows SDK. This first pass focused on targeting x86_64 Desktop, so targeting the Windows Store or other architectures is not guaranteed to work.
 
 <!-- next-url -->
-[Unreleased]: https://github.com/Jake-Shadle/xwin/compare/0.6.7...HEAD
+[Unreleased]: https://github.com/Jake-Shadle/xwin/compare/0.10.0...HEAD
+[0.10.0]: https://github.com/Jake-Shadle/xwin/compare/0.9.0...0.10.0
+[0.9.0]: https://github.com/Jake-Shadle/xwin/compare/0.8.0...0.9.0
+[0.8.0]: https://github.com/Jake-Shadle/xwin/compare/0.7.0...0.8.0
+[0.7.0]: https://github.com/Jake-Shadle/xwin/compare/0.6.7...0.7.0
 [0.6.7]: https://github.com/Jake-Shadle/xwin/compare/0.6.6...0.6.7
 [0.6.6]: https://github.com/Jake-Shadle/xwin/compare/0.6.5...0.6.6
 [0.6.5]: https://github.com/Jake-Shadle/xwin/compare/0.6.4...0.6.5

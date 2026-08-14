@@ -213,7 +213,7 @@ pub struct Args {
     manifest: Option<PathBuf>,
     /// The manifest version to retrieve
     #[arg(long, default_value = "17")]
-    manifest_version: String,
+    manifest_version: u8,
     /// The product channel to use.
     #[arg(long, default_value = "release")]
     channel: String,
@@ -296,14 +296,10 @@ fn main() -> Result<(), Error> {
             builder = builder.proxy(Some(proxy));
         }
 
-        #[cfg(feature = "native-tls")]
-        {
-            builder = builder.tls_config(
-                ureq::tls::TlsConfig::builder()
-                    .provider(ureq::tls::TlsProvider::NativeTls)
-                    .build(),
-            );
-        }
+        let tls_config =
+            ureq::tls::TlsConfig::builder().root_certs(ureq::tls::RootCerts::PlatformVerifier);
+
+        builder = builder.tls_config(tls_config.build());
 
         builder.build().new_agent()
     };
@@ -323,7 +319,7 @@ fn main() -> Result<(), Error> {
     let pkg_manifest = load_manifest(
         &ctx,
         args.manifest.as_ref(),
-        &args.manifest_version,
+        args.manifest_version,
         &args.channel,
         draw_target,
     )?;
@@ -534,7 +530,7 @@ fn print_packages(payloads: &[xwin::Payload]) {
 fn load_manifest(
     ctx: &xwin::Ctx,
     manifest: Option<&PathBuf>,
-    manifest_version: &str,
+    manifest_version: u8,
     channel: &str,
     dt: xwin::util::ProgressTarget,
 ) -> anyhow::Result<xwin::manifest::PackageManifest> {

@@ -1,3 +1,14 @@
+fn manifest_version() -> u8 {
+    // TODO: Bump to CI to 17 once github actions isn't using an ancient version,
+    // we could install in the action run, but not really worth it since I can
+    // test locally
+    if std::env::var_os("CI").is_some() {
+        16
+    } else {
+        18
+    }
+}
+
 #[test]
 fn verify_compiles() {
     let ctx = xwin::Ctx::with_dir(
@@ -12,17 +23,8 @@ fn verify_compiles() {
 
     let hidden = indicatif::ProgressBar::hidden();
 
-    // TODO: Bump to CI to 17 once github actions isn't using an ancient version,
-    // we could install in the action run, but not really worth it since I can
-    // test locally
-    let manifest_version = if std::env::var_os("CI").is_some() {
-        "16"
-    } else {
-        "17"
-    };
-
     let manifest =
-        xwin::manifest::get_manifest(&ctx, manifest_version, "release", hidden.clone()).unwrap();
+        xwin::manifest::get_manifest(&ctx, manifest_version(), "release", hidden.clone()).unwrap();
     let pkg_manifest =
         xwin::manifest::get_package_manifest(&ctx, &manifest, hidden.clone()).unwrap();
 
@@ -110,7 +112,7 @@ fn verify_compiles() {
             }
             Style::WinSysRoot => {
                 const SEP: char = '\x1F';
-                cmd.env("CARGO_ENCODED_RUSTFLAGS", format!("-C{SEP}linker=lld-link{SEP}-Lnative={od}/VC/Tools/MSVC/{crt_version}/Lib/x64{SEP}-Lnative={od}/Windows Kits/10/Lib/{sdk_version}/um/x64{SEP}-Lnative={od}/Windows Kits/10/Lib/{sdk_version}/ucrt/x64", crt_version = &pruned.crt_version, sdk_version = &pruned.sdk_version));
+                cmd.env("CARGO_ENCODED_RUSTFLAGS", format!("-C{SEP}linker=lld-link{SEP}-Lnative={od}/VC/Tools/MSVC/{crt_version}/Lib/x64{SEP}-Lnative={od}/Windows Kits/10/Lib/{sdk_version}/um/x64{SEP}-Lnative={od}/Windows Kits/10/Lib/{sdk_version}/ucrt/x64", crt_version = pruned.crt_version, sdk_version = pruned.sdk_version));
 
                 format!("-Wno-unused-command-line-argument -fuse-ld=lld-link /winsysroot {od}")
             }
@@ -183,17 +185,8 @@ fn verify_compiles_minimized() {
 
     let hidden = indicatif::ProgressBar::hidden();
 
-    // TODO: Bump to CI to 17 once github actions isn't using an ancient version,
-    // we could install in the action run, but not really worth it since I can
-    // test locally
-    let manifest_version = if std::env::var_os("CI").is_some() {
-        "16"
-    } else {
-        "17"
-    };
-
     let manifest =
-        xwin::manifest::get_manifest(&ctx, manifest_version, "release", hidden.clone()).unwrap();
+        xwin::manifest::get_manifest(&ctx, manifest_version(), "release", hidden.clone()).unwrap();
     let pkg_manifest =
         xwin::manifest::get_package_manifest(&ctx, &manifest, hidden.clone()).unwrap();
 
@@ -293,7 +286,7 @@ fn verify_compiles_minimized() {
 }
 
 #[test]
-fn verify_compiles_aarch64() {
+fn verify_aarch64_compiles() {
     let ctx = xwin::Ctx::with_dir(
         xwin::PathBuf::from(".xwin-cache/compiles-aarch64"),
         xwin::util::ProgressTarget::Hidden,
@@ -306,17 +299,8 @@ fn verify_compiles_aarch64() {
 
     let hidden = indicatif::ProgressBar::hidden();
 
-    // TODO: Bump to CI to 17 once github actions isn't using an ancient version,
-    // we could install in the action run, but not really worth it since I can
-    // test locally
-    let manifest_version = if std::env::var_os("CI").is_some() {
-        "16"
-    } else {
-        "17"
-    };
-
     let manifest =
-        xwin::manifest::get_manifest(&ctx, manifest_version, "release", hidden.clone()).unwrap();
+        xwin::manifest::get_manifest(&ctx, manifest_version(), "release", hidden.clone()).unwrap();
     let pkg_manifest =
         xwin::manifest::get_package_manifest(&ctx, &manifest, hidden.clone()).unwrap();
 
@@ -404,7 +388,7 @@ fn verify_compiles_aarch64() {
             }
             Style::WinSysRoot => {
                 const SEP: char = '\x1F';
-                cmd.env("CARGO_ENCODED_RUSTFLAGS", format!("-C{SEP}linker=lld-link{SEP}-Lnative={od}/VC/Tools/MSVC/{crt_version}/Lib/x64{SEP}-Lnative={od}/Windows Kits/10/Lib/{sdk_version}/um/x64{SEP}-Lnative={od}/Windows Kits/10/Lib/{sdk_version}/ucrt/x64", crt_version = &pruned.crt_version, sdk_version = &pruned.sdk_version));
+                cmd.env("CARGO_ENCODED_RUSTFLAGS", format!("-C{SEP}linker=lld-link{SEP}-Lnative={od}/VC/Tools/MSVC/{crt_version}/Lib/x64{SEP}-Lnative={od}/Windows Kits/10/Lib/{sdk_version}/um/x64{SEP}-Lnative={od}/Windows Kits/10/Lib/{sdk_version}/ucrt/x64", crt_version = pruned.crt_version, sdk_version = pruned.sdk_version));
 
                 format!("-Wno-unused-command-line-argument -fuse-ld=lld-link /winsysroot {od}")
             }
