@@ -56,6 +56,12 @@ impl VfsOverlay {
     }
 }
 
+impl Default for VfsOverlay {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 mod string_bool {
     use serde::{self, Serializer};
 
