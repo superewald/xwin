@@ -66,12 +66,16 @@ tracing-subscriber = { version = "0.3", default-features = false, features = [
     "json",
 ] }
 # Hashing
-twox-hash = { version = "2.1", default-features = false, features = ["xxhash64"] }
+twox-hash = { version = "2.1", default-features = false, features = [
+    "xxhash64",
+] }
 # Determine the latest CRT and SDK versions
 versions = "7.0"
 walkdir = "2.3"
 # Unpacking of VSIX "packages"
-zip = { version = "8.0", default-features = false, features = ["deflate-flate2"] }
+zip = { version = "8.0", default-features = false, features = [
+    "deflate-flate2",
+] }
 
 # HTTP requests
 [dependencies.ureq]
@@ -104,7 +108,3 @@ opt-level = 3
 
 [profile.dev.package.sha2]
 opt-level = 3
-
-[build-dependencies]
-static_vcruntime = "2.0"
-
