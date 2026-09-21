@@ -27,7 +27,8 @@ anyhow = "1.0"
 # Network/file buffers
 bytes = "1.10"
 # CAB files are used in conjunction with MSI files for SDK packages
-cab = "0.6"
+# TODO: revert to cab = "0.6.x" when https://github.com/mdsteele/rust-cab/pull/44 merged
+cab = { git = "https://github.com/superewald/rust-cab", branch = "feat/reader-api-perf" }
 # Nicer to use utf-8 paths
 camino = "1.0"
 # Easy CLI tables
