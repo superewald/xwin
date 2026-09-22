@@ -9,6 +9,7 @@ pub struct VfsOverlay {
     pub case_sensitive: bool,
     #[serde(with = "string_bool")]
     pub overlay_relative: bool,
+    pub root_relative: &'static str,
     pub roots: Vec<VfsEntry>,
 }
 
@@ -49,8 +50,9 @@ impl VfsOverlay {
     pub fn new() -> Self {
         Self {
             version: 0,
-            case_sensitive: true,
+            case_sensitive: false,
             overlay_relative: true,
+            root_relative: "overlay-dir",
             roots: Vec::new(),
         }
     }

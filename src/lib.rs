@@ -1086,13 +1086,40 @@ impl Section {
 
 use parking_lot::Mutex;
 
+/// Describes how a case-variant path should be resolved.
+#[derive(Copy, Clone, Default)]
+pub struct SymlinkTarget<'vfs> {
+    /// Create a real filesystem symlink
+    pub create: bool,
+    /// Add vfs overlay entry (no-op on case-insensitive fs or `--disable-vfsoverlay`)
+    pub overlay: Option<(&'vfs Mutex<vfs::VfsOverlay>, &'vfs Path)>,
+}
+
+impl<'vfs> SymlinkTarget<'vfs> {
+    pub fn new(
+        create: bool,
+        vfsoverlay: bool,
+        output_root: &'vfs Path,
+        overlay: &'vfs Mutex<vfs::VfsOverlay>,
+    ) -> Self {
+        Self {
+            create,
+            overlay: vfsoverlay.then_some((overlay, output_root)),
+        }
+    }
+
+    /// Only create real filesystem symlinks
+    pub fn symlinks() -> Self {
+        Self {
+            create: true,
+            overlay: None,
+        }
+    }
+}
+
 #[inline]
-fn symlink(
-    original: &str,
-    link: &Path,
-    vfs: Option<(&Mutex<vfs::VfsOverlay>, &Path)>,
-) -> Result<(), Error> {
-    if let Some((vfs, output_root)) = vfs {
+fn symlink(original: &str, link: &Path, target: SymlinkTarget<'_>) -> Result<(), Error> {
+    if let Some((vfs, output_root)) = target.overlay {
         let external_contents_path = link.parent().unwrap().join(original);
         let external_contents_abs = util::canonicalize(&external_contents_path)?;
         let name_abs = util::canonicalize(link.parent().unwrap())?.join(link.file_name().unwrap());
@@ -1115,23 +1142,30 @@ fn symlink(
         };
 
         vfs.lock().roots.push(entry);
-        Ok(())
-    } else {
-        #[cfg(unix)]
-        {
-            std::os::unix::fs::symlink(original, link)
+    }
+
+    if target.create {
+        create_symlink(original, link)?;
+    }
+
+    Ok(())
+}
+
+fn create_symlink(original: &str, link: &Path) -> Result<(), Error> {
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(original, link)
+            .with_context(|| format!("unable to symlink from {link} to {original}"))
+    }
+    #[cfg(windows)]
+    {
+        let full_path = link.parent().unwrap().join(original);
+        if full_path.is_dir() {
+            std::os::windows::fs::symlink_dir(original, link)
                 .with_context(|| format!("unable to symlink from {link} to {original}"))
-        }
-        #[cfg(windows)]
-        {
-            let full_path = link.parent().unwrap().join(original);
-            if full_path.is_dir() {
-                std::os::windows::fs::symlink_dir(original, link)
-                    .with_context(|| format!("unable to symlink from {link} to {original}"))
-            } else {
-                std::os::windows::fs::symlink_file(original, link)
-                    .with_context(|| format!("unable to symlink from {link} to {original}"))
-            }
+        } else {
+            std::os::windows::fs::symlink_file(original, link)
+                .with_context(|| format!("unable to symlink from {link} to {original}"))
         }
     }
 }
@@ -1140,9 +1174,9 @@ fn symlink(
 fn symlink_on_windows_too(
     original: &str,
     link: &Path,
-    vfs: Option<(&Mutex<vfs::VfsOverlay>, &Path)>,
+    target: SymlinkTarget<'_>,
 ) -> Result<(), Error> {
-    if let Some((vfs, output_root)) = vfs {
+    if let Some((vfs, output_root)) = target.overlay {
         let external_contents_path = link.parent().unwrap().join(original);
         let external_contents_abs = util::canonicalize(&external_contents_path)?;
         let name_abs = util::canonicalize(link.parent().unwrap())?.join(link.file_name().unwrap());
@@ -1156,10 +1190,12 @@ fn symlink_on_windows_too(
             name,
             external_contents,
         });
-        Ok(())
-    } else {
-        symlink(original, link, None)
     }
+
+    // Unlike [`symlink`], this always creates the real symlink, as the
+    // versioned directory aliases it emits are required regardless of
+    // filesystem case sensitivity
+    create_symlink(original, link)
 }
 
 #[cfg(test)]

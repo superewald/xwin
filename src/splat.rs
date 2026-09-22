@@ -1,6 +1,7 @@
-use crate::{Arch, Ctx, Error, Path, PathBuf, PayloadKind, SectionKind, Variant, symlink, vfs};
+use crate::{
+    Arch, Ctx, Error, Path, PathBuf, PayloadKind, SectionKind, SymlinkTarget, Variant, symlink,
+};
 use anyhow::Context as _;
-use parking_lot::Mutex;
 use rayon::prelude::*;
 use std::collections::BTreeMap;
 
@@ -142,7 +143,7 @@ pub(crate) fn splat(
     item: &crate::WorkItem,
     tree: &crate::unpack::FileTree,
     map: Option<&crate::Map>,
-    vfs: Option<(&Mutex<vfs::VfsOverlay>, &Path)>,
+    symlink_target: SymlinkTarget<'_>,
     sdk_version: &str,
     vcrd_version: Option<String>,
     arches: u32,
@@ -572,7 +573,7 @@ pub(crate) fn splat(
                             for sl in symlinks {
                                 tar.pop();
                                 tar.push(sl);
-                                symlink(fname.as_str(), &tar, vfs)?;
+                                symlink(fname.as_str(), &tar, symlink_target)?;
                             }
                         }
 
@@ -694,7 +695,7 @@ pub(crate) fn splat(
                                             tar.pop();
                                             tar.push(additional_name);
 
-                                            symlink(fname_str, &tar, vfs)?;
+                                            symlink(fname_str, &tar, symlink_target)?;
                                         }
                                     }
                                 }
@@ -703,7 +704,7 @@ pub(crate) fn splat(
                                         tar.pop();
                                         tar.push(angry_lib);
 
-                                        symlink(fname_str, &tar, vfs)?;
+                                        symlink(fname_str, &tar, symlink_target)?;
                                     }
                                 }
                                 PayloadKind::SdkLibs | PayloadKind::SdkStoreLibs => {
@@ -719,7 +720,7 @@ pub(crate) fn splat(
                                         tar.pop();
                                         tar.push(fname_str.to_ascii_lowercase());
 
-                                        symlink(fname_str, &tar, vfs)?;
+                                        symlink(fname_str, &tar, symlink_target)?;
                                     }
 
                                     // There is also this: https://github.com/time-rs/time/blob/v0.3.2/src/utc_offset.rs#L454
@@ -732,7 +733,7 @@ pub(crate) fn splat(
                                         tar.pop();
                                         tar.push(additional_name);
 
-                                        symlink(fname_str, &tar, vfs)?;
+                                        symlink(fname_str, &tar, symlink_target)?;
                                     }
 
                                     // We also need to support SCREAMING case for the library names
@@ -742,7 +743,7 @@ pub(crate) fn splat(
                                         tar.push(fname_str.to_ascii_uppercase());
                                         tar.set_extension("lib");
 
-                                        symlink(fname_str, &tar, vfs)?;
+                                        symlink(fname_str, &tar, symlink_target)?;
                                     }
                                 }
                             }
@@ -796,15 +797,15 @@ pub(crate) fn splat(
                     // Multiple architectures both have a lib dir,
                     // but we only need to create this symlink once.
                     if !versioned_linkname.exists() {
-                        crate::symlink_on_windows_too(".", &versioned_linkname, vfs)?;
+                        crate::symlink_on_windows_too(".", &versioned_linkname, symlink_target)?;
                     }
 
                     // https://github.com/llvm/llvm-project/blob/release/14.x/clang/lib/Driver/ToolChains/MSVC.cpp#L1102
-                    if config.enable_symlinks {
+                    if config.enable_symlinks || config.vfsoverlay {
                         let mut title_case = roots.sdk.clone();
                         title_case.push("Lib");
                         if !title_case.exists() {
-                            symlink("lib", &title_case, vfs)?;
+                            symlink("lib", &title_case, symlink_target)?;
                         }
                     }
                 }
@@ -817,15 +818,15 @@ pub(crate) fn splat(
                     // Desktop and Store variants both have an include dir,
                     // but we only need to create this symlink once.
                     if !versioned_linkname.exists() {
-                        crate::symlink_on_windows_too(".", &versioned_linkname, vfs)?;
+                        crate::symlink_on_windows_too(".", &versioned_linkname, symlink_target)?;
                     }
 
                     // https://github.com/llvm/llvm-project/blob/release/14.x/clang/lib/Driver/ToolChains/MSVC.cpp#L1340-L1346
-                    if config.enable_symlinks {
+                    if config.enable_symlinks || config.vfsoverlay {
                         let mut title_case = roots.sdk.clone();
                         title_case.push("Include");
                         if !title_case.exists() {
-                            symlink("include", &title_case, vfs)?;
+                            symlink("include", &title_case, symlink_target)?;
                         }
                     }
                 }
@@ -848,7 +849,7 @@ pub(crate) fn finalize_splat(
     sdk_headers: Vec<SdkHeaders>,
     crt_headers: Option<crate::unpack::FileTree>,
     atl_headers: Option<crate::unpack::FileTree>,
-    vfs: Option<(&Mutex<vfs::VfsOverlay>, &Path)>,
+    symlink_target: SymlinkTarget<'_>,
 ) -> Result<(), Error> {
     let mut files: std::collections::HashMap<
         _,
@@ -1029,7 +1030,7 @@ pub(crate) fn finalize_splat(
                     let mut link = disk_file.path.clone();
                     link.pop();
                     link.push(include_name);
-                    symlink(disk_name, &link, vfs)?;
+                    symlink(disk_name, &link, symlink_target)?;
                 }
                 _ => {}
             },
@@ -1049,7 +1050,7 @@ pub(crate) fn finalize_splat(
         // target.push("um/GL");
         // symlink("gl", &target)?;
     } else {
-        symlink("gl", &roots.sdk.join("include/um/GL"), vfs)?;
+        symlink("gl", &roots.sdk.join("include/um/GL"), symlink_target)?;
     }
 
     Ok(())
