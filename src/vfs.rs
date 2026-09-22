@@ -49,7 +49,7 @@ impl VfsOverlay {
     pub fn new() -> Self {
         Self {
             version: 0,
-            case_sensitive: true,
+            case_sensitive: false,
             overlay_relative: true,
             roots: Vec::new(),
         }
