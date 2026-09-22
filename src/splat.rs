@@ -801,7 +801,7 @@ pub(crate) fn splat(
                     }
 
                     // https://github.com/llvm/llvm-project/blob/release/14.x/clang/lib/Driver/ToolChains/MSVC.cpp#L1102
-                    if config.enable_symlinks {
+                    if config.enable_symlinks || config.vfsoverlay {
                         let mut title_case = roots.sdk.clone();
                         title_case.push("Lib");
                         if !title_case.exists() {
@@ -822,7 +822,7 @@ pub(crate) fn splat(
                     }
 
                     // https://github.com/llvm/llvm-project/blob/release/14.x/clang/lib/Driver/ToolChains/MSVC.cpp#L1340-L1346
-                    if config.enable_symlinks {
+                    if config.enable_symlinks || config.vfsoverlay {
                         let mut title_case = roots.sdk.clone();
                         title_case.push("Include");
                         if !title_case.exists() {
