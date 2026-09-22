@@ -28,7 +28,7 @@ anyhow = "1.0"
 bytes = "1.10"
 # CAB files are used in conjunction with MSI files for SDK packages
 # TODO: revert to cab = "0.6.x" when https://github.com/mdsteele/rust-cab/pull/44 merged
-cab = { git = "https://github.com/superewald/rust-cab", branch = "feat/reader-api-perf" }
+cab = { package = "cab-superewald", version = "0.6.1" }
 # Nicer to use utf-8 paths
 camino = { version = "1.0", features = ["serde"] }
 # Easy CLI tables

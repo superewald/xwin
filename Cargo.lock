@@ -113,9 +113,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 
 [[package]]
-name = "cab"
-version = "0.6.0"
-source = "git+https://github.com/superewald/rust-cab?branch=feat%2Freader-api-perf#e242aaaac01fa464334a9e433634a4d34f7d540d"
+name = "cab-superewald"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31adccfda4222f25d9a430edbc60c414c569faf040c90cac5f7bd0978633b822"
 dependencies = [
  "byteorder",
  "flate2",
@@ -1737,7 +1738,7 @@ version = "0.10.0"
 dependencies = [
  "anyhow",
  "bytes",
- "cab",
+ "cab-superewald",
  "camino",
  "clap",
  "cli-table",
