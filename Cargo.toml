@@ -30,7 +30,7 @@ bytes = "1.10"
 # TODO: revert to cab = "0.6.x" when https://github.com/mdsteele/rust-cab/pull/44 merged
 cab = { package = "cab-superewald", version = "0.6.1" }
 # Nicer to use utf-8 paths
-camino = { version = "1.0", features = ["serde"] }
+camino = { version = "1.2.6" }
 # Easy CLI tables
 cli-table = { version = "0.5", default-features = false }
 crossbeam-channel = "0.5"
