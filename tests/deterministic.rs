@@ -43,6 +43,7 @@ fn verify_deterministic() {
         vfsoverlay: false,
         preserve_ms_arch_notation: false,
         use_winsysroot_style: false,
+        preserve_versions: false,
         map: None,
         copy: true,
         output: output_dir.clone(),

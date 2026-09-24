@@ -47,6 +47,11 @@ Options:
           overlay ignores any filesystem symlinks and resolves the case-variant
           paths to their original files. It is a no-op on case-insensitive
           filesystems, where it is skipped automatically
+        
+      --preserve-versions
+          Keep other CRT/SDK/VCR versions already present in the splat output;
+          only the version being installed is removed first (requires
+          --use-winsysroot-style)
 
       --output <OUTPUT>
           The root output directory. Defaults to `./.xwin-cache/splat` if not
